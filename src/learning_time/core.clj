@@ -4,6 +4,9 @@
             [learning-time.utils :as utils]
             ))
 
+(def favoritos (atom [{:pokemon/id 1}]))
+
+
 (pc/defresolver answer [_ _]
                 {::pc/output [:answer-to-everything]}
                 {:answer-to-everything 42})
@@ -60,6 +63,18 @@
                                                  :type/name (:name %)}) pokemon-types)]
                   {:pokemon/types pokemon-types-info}))
 
+(pc/defresolver show-favs [_ _]
+                {::pc/output [{:my.party/pokemons {:pokemon/id [:pokemon/id]}}]}
+                {:my.party/pokemons @favoritos})
+
+(pc/defmutation add-to-party [_ {:pokemon/keys [id]}]
+                {::pc/sym    'add-to-party
+                 ::pc/params [:pokemon/id]
+                 ::pc/output [{:my.party/pokemons
+                               {:pokemon/id
+                                [:pokemon/id]}}]}
+                {:my.party/pokemons (swap! favoritos conj {:pokemon/id id})})
+
 (def registry
   [answer
    answer-plus-one
@@ -69,7 +84,9 @@
    pokemon-name-by-info-resolver
    pokemon-infos-by-id
    pokemon-infos-by-name
-   pokemon-types-by-infos])
+   pokemon-types-by-infos
+   show-favs
+   add-to-party])
 
 (def parser
   (p/parser
@@ -87,4 +104,4 @@
 
 (comment
   ; to call the parser and get some data out of it, run:
-  (parser {} [{[:pokemon/name "dragonite"] [:pokemon/name {:pokemon/types [:type/url :type/name]} ]}]))
+  (parser {} '[{(add-to-party {:pokemon/id 6}) [{:my.party/pokemons [:pokemon/id :pokemon/name]}]}]))
