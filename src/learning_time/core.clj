@@ -32,14 +32,44 @@
                  ::pc/output [:pokemon/id]}
                 {:pokemon/id (:id (utils/http-get (str "https://pokeapi.co/api/v2/pokemon/" name)))})
 
-(pc/defresolver pokemon-id-resolver
-                [_ {:pokemon/keys [id]}]
-                { ::pc/input #{:pokemon/id}
+(pc/defresolver pokemon-name-by-info-resolver
+                [_ {:pokemon/keys [infos]}]
+                { ::pc/input #{:pokemon/infos}
                  ::pc/output [:pokemon/name]}
-                {:pokemon/name (:name (utils/http-get (str "https://pokeapi.co/api/v2/pokemon/" id)))})
+                {:pokemon/name (:name infos)})
+
+(pc/defresolver pokemon-infos-by-id
+                [_ {:pokemon/keys [id]}]
+                {::pc/input #{:pokemon/id}
+                 ::pc/output [:pokemon/infos]}
+                {:pokemon/infos (utils/http-get (str "https://pokeapi.co/api/v2/pokemon/" id))})
+
+(pc/defresolver pokemon-infos-by-name
+                [_ {:pokemon/keys [name]}]
+                {::pc/input #{:pokemon/name}
+                 ::pc/output [:pokemon/infos]}
+                {:pokemon/infos (utils/http-get (str "https://pokeapi.co/api/v2/pokemon/" name))})
+
+(pc/defresolver pokemon-types-by-infos
+                [_ {:pokemon/keys [infos]}]
+                {::pc/input  #{:pokemon/infos}
+                 ::pc/output [{:pokemon/types {:type/url [:type/url :type/name]}}]}
+                (let [{:keys [types]} infos
+                      pokemon-types (map :type types)
+                      pokemon-types-info (map #(identity {:type/url  (:url %)
+                                                 :type/name (:name %)}) pokemon-types)]
+                  {:pokemon/types pokemon-types-info}))
 
 (def registry
-  [answer answer-plus-one person-resolver person-full-name-resolver pokemon-resolver pokemon-id-resolver])
+  [answer
+   answer-plus-one
+   person-resolver
+   person-full-name-resolver
+   pokemon-resolver
+   pokemon-name-by-info-resolver
+   pokemon-infos-by-id
+   pokemon-infos-by-name
+   pokemon-types-by-infos])
 
 (def parser
   (p/parser
@@ -57,4 +87,4 @@
 
 (comment
   ; to call the parser and get some data out of it, run:
-  (parser {} [{[:pokemon/id 25] [:pokemon/name]} {[:pokemon/name "charmander"] [:pokemon/id]}]))
+  (parser {} [{[:pokemon/name "dragonite"] [:pokemon/name {:pokemon/types [:type/url :type/name]} ]}]))
