@@ -11,8 +11,27 @@
                  ::pc/output [:answer-plus-one]}
                 {:answer-plus-one (inc answer-to-everything)})
 
+(pc/defresolver person-resolver
+                [_ __]
+                {::pc/output [:person/first-name :person/age :person/last-name]}
+                {:person/age        28
+                 :person/first-name "Sara"
+                 :person/last-name  "Last"})
+
+(pc/defresolver person-full-name-resolver
+                [_ {:person/keys [first-name last-name] }]
+                {::pc/input #{:person/first-name :person/last-name}
+                 ::pc/output [:person/full-name]}
+                {:person/full-name (str first-name " " last-name)})
+
+(pc/defresolver pokemon-resolver
+                [_ __]
+                {::pc/output [:pokemon/name :pokemon/id]}
+                {:pokemon/id   4
+                 :pokemon/name "Charmander"})
+
 (def registry
-  [answer answer-plus-one])
+  [answer answer-plus-one person-resolver person-full-name-resolver pokemon-resolver])
 
 (def parser
   (p/parser
@@ -26,6 +45,8 @@
                   p/error-handler-plugin
                   p/trace-plugin]}))
 
+
+
 (comment
   ; to call the parser and get some data out of it, run:
-  (parser {} [:answer-plus-one]))
+  (parser {} [:pokemon/name :pokemon/id]))
