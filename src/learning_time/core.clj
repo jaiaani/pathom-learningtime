@@ -1,6 +1,8 @@
 (ns learning-time.core
   (:require [com.wsscode.pathom.core :as p]
-            [com.wsscode.pathom.connect :as pc]))
+            [com.wsscode.pathom.connect :as pc]
+            [learning-time.utils :as utils]
+            ))
 
 (pc/defresolver answer [_ _]
                 {::pc/output [:answer-to-everything]}
@@ -25,13 +27,19 @@
                 {:person/full-name (str first-name " " last-name)})
 
 (pc/defresolver pokemon-resolver
-                [_ __]
-                {::pc/output [:pokemon/name :pokemon/id]}
-                {:pokemon/id   4
-                 :pokemon/name "Charmander"})
+                [_ {:pokemon/keys [name]}]
+                { ::pc/input #{:pokemon/name}
+                 ::pc/output [:pokemon/id]}
+                {:pokemon/id (:id (utils/http-get (str "https://pokeapi.co/api/v2/pokemon/" name)))})
+
+(pc/defresolver pokemon-id-resolver
+                [_ {:pokemon/keys [id]}]
+                { ::pc/input #{:pokemon/id}
+                 ::pc/output [:pokemon/name]}
+                {:pokemon/name (:name (utils/http-get (str "https://pokeapi.co/api/v2/pokemon/" id)))})
 
 (def registry
-  [answer answer-plus-one person-resolver person-full-name-resolver pokemon-resolver])
+  [answer answer-plus-one person-resolver person-full-name-resolver pokemon-resolver pokemon-id-resolver])
 
 (def parser
   (p/parser
@@ -49,4 +57,4 @@
 
 (comment
   ; to call the parser and get some data out of it, run:
-  (parser {} [:pokemon/name :pokemon/id]))
+  (parser {} [{[:pokemon/id 25] [:pokemon/name]} {[:pokemon/name "charmander"] [:pokemon/id]}]))
